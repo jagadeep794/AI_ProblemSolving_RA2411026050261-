@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Tic Tac Toe AI</title>
+<style>
+body {
+    margin: 0;
+    font-family: 'Segoe UI', sans-serif;
+    background: linear-gradient(135deg,#0f2027,#203a43,#2c5364);
+    color: white;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+}
+
+h1 {
+    margin-bottom: 10px;
+}
+
+#status {
+    margin-bottom: 15px;
+    font-size: 18px;
+    color: #00f7ff;
+}
+
+.board {
+    display: grid;
+    grid-template-columns: repeat(3, 100px);
+    grid-gap: 10px;
+    backdrop-filter: blur(10px);
+    padding: 15px;
+    border-radius: 15px;
+    background: rgba(255,255,255,0.05);
+    box-shadow: 0 0 20px rgba(0,255,255,0.3);
+}
+
+.cell {
+    width: 100px;
+    height: 100px;
+    background: rgba(255,255,255,0.08);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 40px;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+.cell:hover {
+    background: rgba(255,255,255,0.2);
+    transform: scale(1.05);
+}
+
+.cell.X {
+    color: #00f7ff;
+    animation: pop 0.3s ease;
+}
+
+.cell.O {
+    color: #ff4d6d;
+    animation: pop 0.3s ease;
+}
+
+.win {
+    background: #00ff99 !important;
+    color: black !important;
+    animation: glow 0.6s infinite alternate;
+}
+
+button {
+    margin-top: 15px;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 8px;
+    background: #00f7ff;
+    color: black;
+    font-size: 16px;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+button:hover {
+    transform: scale(1.1);
+}
+
+@keyframes pop {
+    from {transform: scale(0);}
+    to {transform: scale(1);}
+}
+
+@keyframes glow {
+    from {box-shadow: 0 0 5px #00ff99;}
+    to {box-shadow: 0 0 20px #00ff99;}
+}
+</style>
+</head>
+
+<body>
+
+<h1>🤖 Tic Tac Toe AI</h1>
+<div id="status">Your Turn (X)</div>
+
+<div class="board" id="board"></div>
+
+<button onclick="reset()">Restart</button>
+
+<script>
+let board = ["","","","","","","","",""];
+let human = "X";
+let ai = "O";
+let gameOver = false;
+
+let boardDiv = document.getElementById("board");
+let statusText = document.getElementById("status");
+
+for(let i=0;i<9;i++){
+    let cell = document.createElement("div");
+    cell.classList.add("cell");
+    cell.onclick = () => move(i);
+    boardDiv.appendChild(cell);
+}
+
+function move(i){
+    if(board[i]!=="" || gameOver) return;
+
+    board[i] = human;
+    draw();
+
+    let win = checkWin(board,human);
+    if(win){
+        highlight(win);
+        statusText.innerText = "🎉 You Win!";
+        gameOver = true;
+        return;
+    }
+
+    statusText.innerText = "AI Thinking...";
+
+    setTimeout(()=>{
+        aiMove();
+
+        let winAI = checkWin(board,ai);
+        if(winAI){
+            highlight(winAI);
+            statusText.innerText = "😈 AI Wins!";
+            gameOver = true;
+        } else if(!board.includes("")){
+            statusText.innerText = "🤝 Draw!";
+            gameOver = true;
+        } else {
+            statusText.innerText = "Your Turn (X)";
+        }
+    },400);
+}
+
+function draw(){
+    let cells = document.querySelectorAll(".cell");
+    for(let i=0;i<9;i++){
+        cells[i].innerText = board[i];
+        cells[i].classList.remove("X","O");
+        if(board[i]==="X") cells[i].classList.add("X");
+        if(board[i]==="O") cells[i].classList.add("O");
+    }
+}
+
+function aiMove(){
+    let best = minimax(board, ai).index;
+    board[best] = ai;
+    draw();
+}
+
+function minimax(newBoard, player){
+    let avail = newBoard.map((v,i)=>v===""?i:null).filter(v=>v!==null);
+
+    if(checkWin(newBoard,human)) return {score:-10};
+    if(checkWin(newBoard,ai)) return {score:10};
+    if(avail.length===0) return {score:0};
+
+    let moves=[];
+
+    for(let i of avail){
+        let move={};
+        move.index=i;
+        newBoard[i]=player;
+
+        move.score = minimax(newBoard, player===ai?human:ai).score;
+
+        newBoard[i]="";
+        moves.push(move);
+    }
+
+    return player===ai
+        ? moves.reduce((best,m)=>m.score>best.score?m:best)
+        : moves.reduce((best,m)=>m.score<best.score?m:best);
+}
+
+function checkWin(b,p){
+    let combos=[
+        [0,1,2],[3,4,5],[6,7,8],
+        [0,3,6],[1,4,7],[2,5,8],
+        [0,4,8],[2,4,6]
+    ];
+    return combos.find(c=>c.every(i=>b[i]===p));
+}
+
+function highlight(combo){
+    let cells = document.querySelectorAll(".cell");
+    combo.forEach(i=>cells[i].classList.add("win"));
+}
+
+function reset(){
+    board=["","","","","","","","",""];
+    gameOver=false;
+    statusText.innerText="Your Turn (X)";
+    draw();
+
+    document.querySelectorAll(".cell").forEach(c=>{
+        c.classList.remove("win");
+    });
+}
+</script>
+
+</body>
+</html>
